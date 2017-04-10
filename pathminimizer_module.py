@@ -12,7 +12,7 @@ from ctypes import c_bool
 array_1d_double = npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')
 
 # load the library, using numpy mechanisms
-libcd = npct.load_library("pathminimizer", ".")
+libcd = npct.load_library("neb", ".")
 
 # setup the return types and argument types
 libcd.find_mep.restype = None
@@ -22,68 +22,60 @@ libcd.find_mep.argtypes = [
         array_1d_double, #M array
         array_1d_double, #V array
         array_1d_double, #K array
-        c_double,        #H
-        c_double,        #H_angle
         array_1d_double, #K angles array
-        array_1d_double, #M angles array
-        c_double,        #factor we use to change units for the energy
+        c_double,        #factor
         c_int,           #n dimension
-        c_int,             #m dimension
+        c_int,           #m dimension
         array_1d_double, #path
         array_1d_double, #energy path
+        c_double,        #H
+        c_double,        #H_angle
         c_double,        #dt
         c_double,        #epsilon
         c_double,        #k_spring
         c_int,           #maxiter
-        c_int,           #printInfoAfter
         c_bool,          #use_ci
-        c_int,           #useCIAfter
-        c_bool          #printInfo
+        c_bool          #use_fi
         ]
-#
-def find_mep(
+
+def find_mep_func(
         distances,
         distances_unit_vectors,
-        m_values,
-        v_values,
-        k_values,
-        h_value,
-        h_angle,
-        k_angles,
-        m_angles,
+        magnetisation_values,
+        islands_volumes,
+        anisotropy_values,
+        anisotropy_angles,
         factor,
-        #m and n goes inside the func
+        # n goes inside the func
+        # m  goes inside the func
         path,
         energy_path,
+        H,
+        H_angle,
         dt,
         epsilon,
         k_spring,
         maxiter,
-        printInfoAfter,
         use_ci,
-        useCIAfter,
-        printInfo
+        use_fi
         ):
-        return libcd.cos_doubles(
-                distances,
-                distances_unit_vectors,
-                m_values,
-                v_values,
-                k_values,
-                h_value,
-                h_angle,
-                k_angles,
-                m_angles,
+        return libcd.find_mep(
+                distances.flatten(),
+                distances_unit_vectors.flatten(),
+                magnetisation_values,
+                islands_volumes,
+                anisotropy_values,
+                anisotropy_angles,
                 factor,
-                m_path.shape[0],
-                m_path.shpae[1],
-                path,
+                path.shape[0], # n
+                path.shape[1], # m 
+                path.flatten(),
                 energy_path,
+                H,
+                H_angle,
                 dt,
                 epsilon,
                 k_spring,
                 maxiter,
-                printInfoAfter,
                 use_ci,
-                useCIAfter,
-                printInfo)
+                use_fi)
