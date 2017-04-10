@@ -36,6 +36,17 @@ void shape_anisotropy_energy(
   mid = nullptr;
 }
 
+#ifdef __cplusplus
+extern "C" void zeeman_energy(
+    const double *system_angles,
+    const double *ext_field_angles,
+    const double *ext_field_values,
+    const double *islands_volumes,
+    const double *magnetisation_values,
+    const double factor,
+    const int size,
+    double *output)
+#else
 void zeeman_energy(
     const double *system_angles,
     const double *ext_field_angles,
@@ -45,8 +56,8 @@ void zeeman_energy(
     const double factor,
     const int size,
     double *output)
+#endif
 {
-
   double *mid = new double[size]{};
     for (int i = 0; i < size; i++) {
         mid[i] = system_angles[i] - ext_field_angles[i];
@@ -61,6 +72,17 @@ void zeeman_energy(
   mid = nullptr;
 }
 
+#ifdef __cplusplus
+extern "C" void dipole_dipole_energy(
+    const double *system_angles,
+    const double *magnetisation_values,
+    const double *islands_volumes,
+    const double *distances,
+    const double *distance_unit_vectors,
+    const double factor,
+    const int size,
+    double *output)
+#else
 void dipole_dipole_energy(
     const double *system_angles,
     const double *magnetisation_values,
@@ -70,6 +92,7 @@ void dipole_dipole_energy(
     const double factor,
     const int size,
     double *output)
+#endif
 {
   double pi = 4 * atan(1.0); // Accurate pi calculation
   double *result_j = new double[size*size]{}; // This array is used for inner loope vectorisation
@@ -108,6 +131,23 @@ void dipole_dipole_energy(
   result_j = nullptr; // Set the array pointer to null
 }
 
+#ifdef __cplusplus
+extern "C" void calculateEnergyAndGradient(
+    const double *set_of_images, // should be (m*n) size
+    const double *magnetisation_values,
+    const double *anisotropy_angles,
+    const double *anisotropy_values,
+    const double ext_field_value,
+    const double ext_field_angle,
+    const double *islands_volumes,
+    const double *distances,
+    const double *distance_unit_vectors,
+    const double factor,
+    const int m,
+    const int n,
+    double *result,
+    double *gresult)
+#else
 void calculateEnergyAndGradient(
     const double *set_of_images, // should be (m*n) size
     const double *magnetisation_values,
@@ -123,6 +163,7 @@ void calculateEnergyAndGradient(
     const int n,
     double *result,
     double *gresult)
+#endif
 {
   double *output = new double[n*m]{}; // This array is used for inner loop vectorisation
   double pi = 4 * atan(1.0); // Accurate pi calculation
@@ -199,7 +240,16 @@ void calculateEnergyAndGradient(
   output = nullptr;
 }
 
-
+#ifdef __cplusplus
+extern "C" void calculateTangetAndSpringForces(
+    const double *set_of_images, // should be (m*n) size
+    const double *energy_path,
+    int n,
+    int m,
+    double springConstant,
+    double *result,
+    double *springForces)
+#else
 void calculateTangetAndSpringForces(
     const double *set_of_images, // should be (m*n) size
     const double *energy_path,
@@ -208,6 +258,7 @@ void calculateTangetAndSpringForces(
     double springConstant,
     double *result,
     double *springForces)
+#endif
 {
   double *tanget_plus = new double[n*(m)]{};
   double *tanget_minus = new double[n*(m)]{};
@@ -287,12 +338,21 @@ void calculateTangetAndSpringForces(
  tanget_minus=nullptr;
 }
 
+#ifdef __cplusplus
+extern "C" void calculatePerpendicularForces(
+    const double *gradient_path,
+    const double *norm_tangets,
+    int n,
+    int m,
+    double *result)
+#else
 void calculatePerpendicularForces(
     const double *gradient_path,
     const double *norm_tangets,
     int n,
     int m,
     double *result)
+#endif
 {
   double *tangets_gradient_dot_product = new double[m]{};
 
@@ -313,22 +373,40 @@ void calculatePerpendicularForces(
   tangets_gradient_dot_product=nullptr;
 }
 
+#ifdef __cplusplus
+extern "C" void calculateTrueForces(
+    const double *springForces,
+    const double *perpendicularForces,
+    int n,
+    int m,
+    double *result)
+#else
 void calculateTrueForces(
     const double *springForces,
     const double *perpendicularForces,
     int n,
     int m,
     double *result)
+#endif
 {
   vdSub(n*m,springForces,perpendicularForces,result);
 }
 
+#ifdef __cplusplus
+extern "C" void makeStep(
+    double *path,
+    const double *forces,
+    int n,
+    int m,
+    double dt)
+#else
 void makeStep(
     double *path,
     const double *forces,
-    double n,
-    double m,
+    int n,
+    int m,
     double dt)
+#endif
 {
   cblas_daxpy(n*m,dt,forces,1,path,1);
   for (int image = 1; image < m-1; image++)

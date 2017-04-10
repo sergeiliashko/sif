@@ -1,10 +1,12 @@
 #include <iostream>
-#include "energy.h"
 #include <mathimf.h>
 #include <fstream>
 #include "mkl.h"
 #include <vector>
 
+extern "C" {
+#include "energy.h"
+}
 
 std::vector<int> argrelextrem(const double *arr, const int size, std::function<bool (double,double)> comparator)
 {
@@ -26,6 +28,7 @@ std::vector<int> argrelextrem(const double *arr, const int size, std::function<b
   }
   return result;
 }
+
 inline void print2DArray(
     const double *arr, int rows, int columns,
     const std::string &fName,
@@ -56,25 +59,26 @@ inline void print1DArray(const double *arr, const int size, const std::string &f
   myfile.close();
 }
 
-void find_mep(
+extern "C" void find_mep(
     const double *distances,
     const double *distance_unit_vectors,
     const double *M,
     const double *V,
     const double *K,
     const double *kAngles,
-    const double *mAngels,
     double factor,
     int n,
     int m,
     double *path,
     double *energy_path,
-    double dt=0.1,
-    double epsilon=1e-8,
-    double k_spring=1.0,
-    int maxiter=10000,
-    bool use_ci=false,
-    bool use_fi=false)
+    double H,//=0.0,
+    double H_angle,//0.0,
+    double dt,//0.1,
+    double epsilon,//1e-8,
+    double k_spring,//1.0,
+    int maxiter,//10000,
+    bool use_ci,//false,
+    bool use_fi)//false)
 {
   double tol = fmax(epsilon, pow(m,-4.0));
   double maxForce = 1.0;
@@ -98,7 +102,7 @@ void find_mep(
       std::cout << "mfor: "<< maxForce <<"\n"; 
     }
 
-    calculateEnergyAndGradient(path,M,kAngles,K,V,distances,distance_unit_vectors,factor,m,n,energy_path,goutput);
+    calculateEnergyAndGradient(path,M,kAngles,K,H,H_angle,V,distances,distance_unit_vectors,factor,m,n,energy_path,goutput);
     calculateTangetAndSpringForces(path,energy_path,n,m,k_spring,tangets,spforces);
     calculatePerpendicularForces(goutput,tangets,n,m,perforces);
     calculateTrueForces(spforces,perforces,n,m,trueforces);

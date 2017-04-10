@@ -71,7 +71,7 @@ void calculateTrueForces(
 void makeStep(
     double *path,
     const double *forces,
-    double n,
-    double m,
+    int n,
+    int m,
     double dt);
 #endif

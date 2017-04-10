@@ -2,7 +2,7 @@
     Why would we need that you ask? Well, you
     always need to make a check what's going on
     at particular step. The acces to energy functions
-    make that trivial task"""
+    make that a trivial task"""
 
 import numpy as np
 import numpy.ctypeslib as npct

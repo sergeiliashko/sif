@@ -14,4 +14,6 @@ source "$mklpath/mklvars.sh" $platform
 echo "Seting up env vars for the intel compilers" >&2
 source "$compilerpath/compilervars.sh" $platform
 
+export DYLD_LIBRARY_PATH="/opt/intel/compilers_and_libraries/mac/lib"
+
 echo "Succes"

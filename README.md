@@ -11,7 +11,6 @@ No magic or earth gods, just NEB algorithm, polar coordinate system and Harmonic
 4. ???
 5. PROFIT
 
-
 ## What's included
 - *intelpath.cfg* Is the place to put your intel compile vars
 - *setupenv.sh* Is the script that should set up all enviroment variables are required for the intel compiler to run 
