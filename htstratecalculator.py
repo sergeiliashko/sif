@@ -2,16 +2,16 @@ import sympy
 from sympy.parsing.sympy_parser import (parse_expr, implicit_multiplication_application,standard_transformations)
 
 # n number of islands
-def constructSymbolicHessianAndEnergy(n):
+def constructSymbolicEnergyAndHessian(n):
     def uniti_anisotropy_member(i):
-        return f"K_{i}V_{i}(sin(th_{i})cos(phi_{i} - phi_K_{i}))**2"
+        return f"K_{i}*V_{i}*(sin(th_{i})cos(phi_{i} - phi_K_{i}))**2"
     def uniti_easy_plane_member(i):
         return f"K_p*V_{i}*cos(th_{i})cos(th_{i})"
     def uniti_zeeman_member(i):
-        return f"M_{i}V_{i}Hsin(th_{i})cos(phi_{i}-phi_H"
+        return f"M_{i}V_{i}H_{i}sin(th_{i})cos(phi_{i}-phi_H_{i}"
     def uniti_dipole_memeber(i,k):
         _first = f"sin(th_{i})*sin(th_{k})*cos(phi_{i} - phi_{k}) + cos(th_{i})*cos(th_{k})"
-        _second = f"3sin(th_{i})cos(ph_{i}-ph_r_{i}{k})sin(th_{k})cos(ph_{k}-ph_r_{i}{k})"
+        _second = f"3sin(th_{i})cos(phi_{i}-phi_r_{i}{k})sin(th_{k})cos(phi_{k}-phi_r_{i}{k})"
         return f"({_second}-{_first})4*pi*M_{i}*M_{k}*V_{i}*V_{k}/r_{i}{k}**3"
 
     def desiredParser(string):
@@ -27,19 +27,34 @@ def constructSymbolicHessianAndEnergy(n):
         _res_zeeman += "-" + uniti_easy_plane_member(h)
         for k in range(n):
             if(h<k): _res_dipole += "-" + uniti_dipole_memeber(h,k)
-    _symbolic_energy = desiredParser(_res_anis+_res_easyplane+_res_dipole+_res_dipole)
-    _symbolic_hessian = sympy.hessian(_symbolic_energy,[parse_expr(f"phi_{i}") for i in range(n)] + [parse_expr(f"theta_{i}") for i in range(n)])
-    return (_symbolic_energy, _symbolic_hessian)
+
+    _symbolic_energy = desiredParser(_res_anis+_res_easyplane+_res_dipole+_res_zeeman)
+    _symbolic_hessian = sympy.hessian(_symbolic_energy,[parse_expr(f"phi_{i}") for i in range(n)] + [parse_expr(f"th_{i}") for i in range(n)])
+    return (_symbolic_energy, _symbolic_hessian )
 
 def constructNumericEnergyAndHessian(hessianParams,distances,distance_unit_vectors):
     n = hessianParams["n"]
     #construct hessian
-    _symbolicEnergy, _symbolicHessian = constructSymbolicHessian(n)
+    _symbolicEnergy, _symbolicHessian = constructSymbolicEnergyAndHessian(n)
+
 
     #theta_r_ij is always pi/2
-    _th_r_ij_subs = [(parse_expr(f"theta_r_{i}{j}"),sympy.pi/2) for i in range(n) for j in range(n) if i<j]
+    _th_r_ij_subs = [(parse_expr(f"th_r_{i}{j}"),sympy.pi/2) for i in range(n) for j in range(n) if i<j]
     _res_hessian = _symbolicHessian.subs(_th_r_ij_subs)
     _res_energy = _symbolicEnergy.subs(_th_r_ij_subs)
+
+    #H H_angle
+    _field_angles = hessianParams["field_angle"]
+    _field_values = hessianParams["H"]
+
+    _phi_H_i_subs = [(parse_expr(f"phi_H_{i}"),_field_angles[i]) for i in range(n)]
+    _H_i_subs = [(parse_expr(f"H_{i}"),_field_values[i]) for i in range(n)]
+
+    _res_hessian=_res_hessian.subs(_phi_H_i_subs)
+    _res_energy =_res_energy.subs(_phi_H_i_subs)
+
+    _res_hessian=_res_hessian.subs(_H_i_subs)
+    _res_energy =_res_energy.subs(_H_i_subs)
 
     #r_ij has a matrix distances
     _r_ij_subs = [(parse_expr(f"r_{i}{j}"),distances[i,j]) for i in range(n) for j in range(n) if i<j]
@@ -47,12 +62,12 @@ def constructNumericEnergyAndHessian(hessianParams,distances,distance_unit_vecto
     _res_energy = _res_energy.subs(_r_ij_subs)
 
     #phi_r_ij has a matrix of unit vectors
-    _th_r_ij_subs = [(parse_expr(f"phi_r_{i}{j}"),distance_unit_vectors[i,j]) for i in range(n) for j in range(n) if i<j]
+    _phi_r_ij_subs = [(parse_expr(f"phi_r_{i}{j}"),distance_unit_vectors[i,j]) for i in range(n) for j in range(n) if i<j]
     _res_hessian=_res_hessian.subs(_phi_r_ij_subs)
     _res_energy = _res_energy.subs(_phi_r_ij_subs)
 
     #theta_i is always pi/2
-    _th_i_subs = [(parse_expr(f"theta_{i}"),sympy.pi/2) for i in range(n)]
+    _th_i_subs = [(parse_expr(f"th_{i}"),sympy.pi/2) for i in range(n)]
     _res_hessian=_res_hessian.subs(_th_i_subs)
     _res_energy = _res_energy.subs(_th_i_subs)
 
@@ -79,14 +94,6 @@ def constructNumericEnergyAndHessian(hessianParams,distances,distance_unit_vecto
     _res_hessian=_res_hessian.subs(_M_i_subs)
     _res_energy = _res_energy.subs(_M_i_subs)
 
-    #H H_angle
-    _res_hessian=_res_hessian.subs([
-        (parse_expr("H_angle"),hessianParams["field_angle"])
-        (parse_expr("H"),hessianParams["H"]) ])
-
-    _res_energy=_res_energy.subs([
-        (parse_expr("H_angle"),hessianParams["field_angle"])
-        (parse_expr("H"),hessianParams["H"]) ])
 
     _phi_i_vars = [parse_expr(f"phi_{i}") for i in range(n)]
     _res_hessian = sympy.lambdify([_phi_i_vars],_res_hessian,"numpy")
