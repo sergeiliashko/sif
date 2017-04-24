@@ -4,21 +4,11 @@
 # intel mkl and compilers. Cannot put that to the make file since 
 # on run make doesn't change the enviroment.
 
-export DYLD_LIBRARY_PATH="/opt/intel/compilers_and_libraries/mac/lib"
-
 echo "Start"
-echo "Reading config for intel compiler and mkl" >&2
-source intelpath.cfg
+echo "Reading config for intel and neb dylib " >&2
+source "required_params/intelpath.cfg"
+source "required_params/nebpath.cfg"
 
-echo "Seting up env vars for the mkl" >&2
-source "$mklpath/mklvars.sh" $platform
-
-echo "Seting up env vars for the intel compilers" >&2
-source "$compilerpath/compilervars.sh" $platform
-
-<<<<<<< Updated upstream
-export DYLD_LIBRARY_PATH="/opt/intel/compilers_and_libraries/mac/lib"
-=======
->>>>>>> Stashed changes
+export DYLD_LIBRARY_PATH="$intel_dyldlib_path:$neb_dyldlib_path"
 
 echo "Succes"
