@@ -44,16 +44,21 @@ def generate_coherent_rotation_path(initState,finalState, size,rotation_orientat
 # m = n*z-n+1 => z = (m + n -1)/n
 def generate_one_by_one_rotation_path(initState, finalState, numberOfIntermidSteps,rotation_orientation):
     m = numberOfIntermidSteps
-    dt = np.array([np.array(finalState)-np.array(initState)])/(m-1)
+    dt = (np.array(finalState)-np.array(initState))/(m-1)
+    print(dt)
+    print(rotation_orientation)
     dt = dt*np.array(rotation_orientation)
     path = np.array([initState])
+    t_i = 0
     for i in range(len(initState)):
         change = np.zeros_like(dt)
-        change[0,i] = dt[0,i]
-        for j in range(m-1):
-            #k = i*len(initState) + j
-            k = i*(m-1)+j
-            path = np.vstack((path,(path[k,:]+change)))
+        change[i] = dt[i]
+        if(np.abs(change[i]) > 1e-3):
+            for j in range(m-1):
+                #k = i*len(initState) + j
+                k = t_i*(m-1)+j
+                path = np.vstack((path,(path[k,:]+change)))
+            t_i+=1
     return (path % (2*pi)).T
 
 #def generate_between_states_path()

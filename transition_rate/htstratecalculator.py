@@ -15,7 +15,9 @@ def constructSymbolicEnergyAndHessian(n):
     def uniti_dipole_memeber(i,k):
         _first = f"sin(th_{i})*sin(th_{k})*cos(phi_{i} - phi_{k}) + cos(th_{i})*cos(th_{k})"
         _second = f"3sin(th_{i})cos(phi_{i}-phi_r_{i}{k})sin(th_{k})cos(phi_{k}-phi_r_{i}{k})"
-        return f"({_second}-{_first})4*pi*M_{i}*M_{k}*V_{i}*V_{k}/r_{i}{k}**3"
+        #return f"({_second}-{_first})4*pi*M_{i}*M_{k}*V_{i}*V_{k}/r_{i}{k}**3"
+        return f"({_second}-{_first})*M_{i}*M_{k}*V_{i}*V_{k}/r_{i}{k}**3"
+
 
     def desiredParser(string):
         return parse_expr(string, transformations=(standard_transformations + (implicit_multiplication_application,)))
@@ -112,6 +114,14 @@ def calculatePreFactor(numericHessian, minimumCoord, saddleCoord, y):
     hessian_sad = numericHessian(saddleCoord)
     eigen_vals_min = np.linalg.eig(hessian_min)[0]
     eigen_vals_sad, eigen_vecs_sad = np.linalg.eig(hessian_sad)
+    negative_val_pos_min = np.where(eigen_vals_min<0)[0]
+    negative_val_pos_sad = np.where(eigen_vals_sad<0)[0]
+
+    if(len(negative_val_pos_min)>0):
+        raise ValueError('ERROR.Got negative eigen value at minima')
+    if(len(negative_val_pos_sad)>1):
+        raise ValueError('ERROR.Got more than 1 negative eigen value at saddle point')
+    negative_val_pos_sad = negative_val_pos_sad[0]
 
     velocities = np.zeros_like(hessian_min)
     velocities[0:n,0:n*2] = y*hessian_sad[n:2*n:,0:2*n]
@@ -119,11 +129,11 @@ def calculatePreFactor(numericHessian, minimumCoord, saddleCoord, y):
 
     tmp = np.dot(np.linalg.inv(eigen_vecs_sad),velocities)
     tmp = np.dot(tmp, eigen_vecs_sad)
-    a_coef = np.copy(tmp[0,:])
-    a_coef[0] = 0.
+    a_coef = np.copy(tmp[negative_val_pos_sad,:])
+    a_coef[negative_val_pos_sad] = 0.
 
     adjusted_eigen_vals_sad = np.copy(eigen_vals_sad)
-    adjusted_eigen_vals_sad[0] = 1
+    adjusted_eigen_vals_sad[negative_val_pos_sad] = 1.
 
     det_min = np.sqrt(eigen_vals_min.prod())
     det_sad = np.sqrt(adjusted_eigen_vals_sad.prod())
@@ -201,8 +211,8 @@ def calculateEffectiveBarrierAndPreFactor(temperature_range,
     slope, intercept, r_value, p_value, std_err = stats.linregress(1./temperature_range,temp1)
     eff_pre_factor = np.exp(intercept)
     eff_barrier = -slope*kb
-    plt.plot(1./temperature_range,temp1 , '-b')
-    plt.show()
+    #plt.plot(1./temperature_range,temp1 , '-b')
+    #plt.show()
     return (eff_barrier,eff_pre_factor,overall_rates)
 
 
@@ -219,7 +229,6 @@ def main(start_T, end_T,step_T,
             hessianParams,
             distances,
             distance_unit_vectors)
-
     y = constants["gyromagnetic_ratio"]/(hessianParams["V"]*hessianParams["M"])
     y = np.swapaxes([y],1,0) # I need a vector with the shape (n,1)
     pre_factors_matrix = calculateAllPreFactors(numericHessian, minimaCoords, saddlesCoords,y)
@@ -242,17 +251,17 @@ def main(start_T, end_T,step_T,
     print(f"eff_barrier with stat is {'%.3f' % eff_barrier_stat}")
     print(f"eff_pre_factor with stat is {'%.2e' % eff_pre_factor_stat}")
     print("=======")
-    eff_barrier_no_stat, eff_pre_factor_no_stat, o_r_ns = calculateEffectiveBarrierAndPreFactor(
-            _temperature_range,
-            np.ones_like(pre_factors_matrix),
-            np.ones_like(pre_factors_matrix),
-            hessianParams,
-            pre_factors_matrix,
-            barriers_matrix,
-            constants)
+    #eff_barrier_no_stat, eff_pre_factor_no_stat, o_r_ns = calculateEffectiveBarrierAndPreFactor(
+    #        _temperature_range,
+    #        np.ones_like(pre_factors_matrix),
+    #        np.ones_like(pre_factors_matrix),
+    #        hessianParams,
+    #        pre_factors_matrix,
+    #        barriers_matrix,
+    #        constants)
 
-    print(f"overall rates across T[{start_T},{end_T}] ")
-    print(np.array(o_r_ns))
-    print(f"eff_barrier without stat is {'%.3f' % eff_barrier_no_stat}")
-    print(f"eff_pre_factor without stat is {'%.2e' % eff_pre_factor_no_stat}")
+    #print(f"overall rates across T[{start_T},{end_T}] ")
+    #print(np.array(o_r_ns))
+    #print(f"eff_barrier without stat is {'%.3f' % eff_barrier_no_stat}")
+    #print(f"eff_pre_factor without stat is {'%.2e' % eff_pre_factor_no_stat}")
 
